@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ibrahim Mawali — Quotation Generator</title>
+<style>
+  :root{
+    --navy:#16264d;
+    --navy-2:#1d3564;
+    --navy-band:#1a2c56;
+    --gold:#b8935a;
+    --gold-2:#c9a86a;
+    --line:#c9cdd6;
+    --line-soft:#e2e5ec;
+    --row-alt:#eef1f7;
+    --text:#1a1a1a;
+    --muted:#5c6270;
+    --teal:#2f6f7e;
+    --font:"Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#5b6272; color:var(--text);
+    font-family:var(--font); font-size:13px; line-height:1.4;
+    padding:24px 12px 80px;
+  }
+
+  /* ---- Toolbar (screen only) ---- */
+  .toolbar{
+    max-width:820px; margin:0 auto 18px; display:flex; gap:10px; flex-wrap:wrap;
+    align-items:center; justify-content:center;
+  }
+  .toolbar button{
+    border:none; border-radius:8px; padding:11px 20px; font-size:14px; font-weight:600;
+    cursor:pointer; font-family:inherit; color:#fff; background:var(--navy);
+    transition:background .15s, transform .05s;
+  }
+  .toolbar button:hover{background:var(--navy-2);}
+  .toolbar button:active{transform:translateY(1px);}
+  .toolbar button.gold{background:var(--gold);}
+  .toolbar button.gold:hover{background:var(--gold-2);}
+  .toolbar .hint{color:#e6e8ee; font-size:12px; width:100%; text-align:center;}
+
+  /* ---- Document sheet ---- */
+  .sheet{
+    width:820px; max-width:100%; margin:0 auto; background:#fff;
+    box-shadow:0 10px 40px rgba(0,0,0,.35);
+    border:1px solid #d0d0d0;
+  }
+  .pad{padding:0 22px;}
+
+  /* seamless inputs that look like printed text */
+  input.f, textarea.f{
+    font-family:inherit; color:inherit; font-size:inherit; line-height:1.35;
+    border:1px dashed #c7ccd6; background:#fbfcfe; border-radius:3px;
+    padding:2px 5px; width:100%; resize:none; outline:none;
+  }
+  input.f:focus, textarea.f:focus{border-color:var(--gold); background:#fffdf7;}
+
+  /* branding inputs — look like the printed title, editable on hover/focus */
+  input.b{font-family:inherit; color:inherit; border:1px solid transparent; background:transparent;
+    border-radius:3px; padding:1px 3px; width:100%; outline:none;}
+  input.b:hover{border-color:#d7dbe3;}
+  input.b:focus{border-color:var(--gold); background:#fffdf7;}
+  .logo{position:relative;}
+  .logo-edit{position:absolute; bottom:-14px; left:50%; transform:translateX(-50%);
+    font-size:9px; color:var(--gold); cursor:pointer; white-space:nowrap; opacity:.85;}
+  .logo-edit:hover{text-decoration:underline;}
+  input.b.feat{width:auto; field-sizing:content; min-width:60px; text-align:center; font-weight:700;}
+
+  /* ================= HEADER ================= */
+  .topline{height:5px; background:linear-gradient(90deg,var(--navy) 0 60%,var(--gold) 60% 100%);}
+  .brandrow{display:flex; align-items:center; justify-content:space-between; padding:14px 22px 8px; gap:16px;}
+  .brand-en .name{font-size:26px; font-weight:800; color:var(--navy); letter-spacing:.5px; line-height:1;}
+  .brand-en .sub{font-size:12.5px; font-weight:700; color:var(--gold); letter-spacing:3px; margin-top:4px;}
+  .logo{flex:none;}
+  .brand-ar{text-align:right; direction:rtl;}
+  .brand-ar .name{font-size:26px; font-weight:800; color:var(--navy); line-height:1;}
+  .brand-ar .sub{font-size:14px; font-weight:700; color:var(--gold); margin-top:5px;}
+
+  .feature-strip{
+    border-top:2px solid var(--gold); border-bottom:2px solid var(--navy);
+    display:flex; justify-content:center; gap:34px; padding:8px 10px; flex-wrap:wrap;
+    margin:4px 0 0;
+  }
+  .feature-strip .fi{display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--navy); letter-spacing:.5px;}
+  .feature-strip .dot{width:9px; height:9px; background:var(--teal); border-radius:2px; transform:rotate(45deg);}
+
+  /* ================= INFO ROW ================= */
+  .inforow{display:grid; grid-template-columns:1fr 1.35fr 1fr; gap:12px; padding:14px 22px 6px;}
+  .infobox{border:1px solid var(--line); border-radius:5px; overflow:hidden;}
+  .infobox .bh{background:var(--navy); color:#fff; font-size:11px; font-weight:700; letter-spacing:.6px; padding:6px 9px; display:flex; align-items:center; gap:6px;}
+  .infobox .bb{padding:7px 9px;}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:3px 8px; align-items:center; margin-bottom:4px;}
+  .kv label{font-size:10.5px; color:var(--navy); font-weight:700; white-space:nowrap;}
+  .kv .val input{font-size:11px; padding:1px 4px;}
+  .center-head{text-align:center; padding:0 4px;}
+  .center-head h1{font-size:30px; color:var(--navy); letter-spacing:2px; margin:2px 0 6px; font-weight:800;}
+  .center-head textarea{font-size:10.8px; color:#33373f; text-align:left; min-height:120px;}
+  .proj .kv{grid-template-columns:1fr; gap:1px;}
+  .proj .kv label{display:flex; align-items:center; gap:5px;}
+
+  /* ================= TABLE ================= */
+  .tbl{padding:8px 22px 0;}
+  table{border-collapse:collapse; width:100%;}
+  thead th{
+    background:var(--navy); color:#fff; font-size:10.5px; font-weight:700; letter-spacing:.4px;
+    padding:7px 6px; border:1px solid #2a3d68; text-align:center;
+  }
+  tbody td{border:1px solid var(--line); padding:4px 6px; font-size:11px; vertical-align:middle; text-align:center;}
+  tbody tr:nth-child(even) td{background:var(--row-alt);}
+  td.desc{text-align:left;}
+  td.desc textarea{font-size:10.6px; min-height:40px;}
+  .col-sr{width:34px;} .col-unit{width:52px;} .col-qty{width:70px;} .col-rate{width:82px;} .col-amt{width:92px;} .col-x{width:26px;}
+  td input.num{text-align:right;}
+  td .amt{font-weight:700; text-align:right; display:block; padding-right:4px;}
+  .rmbtn{background:#c0392b; color:#fff; border:none; border-radius:4px; width:20px; height:20px; cursor:pointer; font-size:12px; line-height:1;}
+  .addrow{margin:8px 0 2px;}
+  .addrow button{background:var(--gold); color:#fff; border:none; border-radius:5px; padding:6px 14px; font-size:12px; font-weight:600; cursor:pointer;}
+
+  .totals{display:flex; justify-content:flex-end; padding:0 22px;}
+  .totals table{width:340px;}
+  .totals td{border:1px solid var(--line); padding:6px 10px; font-size:12px;}
+  .totals .lbl{text-align:right; font-weight:700; color:var(--navy); background:#f3f5f9; width:60%;}
+  .totals .num{text-align:right; font-weight:700;}
+  .totals tr.grand td{background:var(--navy); color:#fff; font-size:13px;}
+
+  /* ================= FOOTER BOXES ================= */
+  .fgrid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; padding:16px 22px 4px;}
+  .fgrid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; padding:8px 22px 4px;}
+  .fbox .fh{color:var(--navy); font-size:11.5px; font-weight:800; letter-spacing:.4px; display:flex; align-items:center; gap:6px; border-bottom:1.5px solid var(--gold); padding-bottom:3px; margin-bottom:5px;}
+  .fbox ul{margin:0; padding-left:16px;}
+  .fbox li{font-size:10px; color:#3a3f48; margin-bottom:2px;}
+  .fbox p{font-size:10px; color:#3a3f48; margin:0;}
+  .fbox .ic{color:var(--teal);}
+  .chk li{list-style:none; position:relative; padding-left:15px;}
+  .chk li::before{content:"✔"; color:#2e8b57; position:absolute; left:0; font-size:9px;}
+
+  /* ================= SIGNATURES ================= */
+  .sigrow{display:grid; grid-template-columns:1.1fr 1.2fr 1fr .8fr; gap:0; border-top:2px solid var(--navy); margin:14px 0 0;}
+  .sigrow .sc{border-right:1px solid var(--line-soft); padding:9px 12px; min-height:118px;}
+  .sigrow .sc:last-child{border-right:none;}
+  .sigrow h4{margin:0 0 6px; font-size:10.5px; color:var(--navy); font-weight:800; letter-spacing:.4px;}
+  .sig-name{font-family:"Segoe Script","Brush Script MT",cursive; color:var(--navy); font-size:20px; margin:2px 0;}
+  .sigrow .small{font-size:9.5px; color:#4a4f58; margin:2px 0;}
+  .sigrow .lineitem{font-size:9.5px; color:#4a4f58; margin-top:6px;}
+  .sigrow .lineitem span{display:inline-block; border-bottom:1px solid #b9bdc7; min-width:70px;}
+  .stamp{border:1px dashed #b9bdc7; border-radius:6px; height:70px; display:flex; align-items:center; justify-content:center; color:#b0b4be; font-size:9px; margin-top:6px;}
+
+  .thanks{background:var(--navy); color:#fff; text-align:center; padding:9px; font-size:13px; font-weight:600; letter-spacing:.5px; margin-top:10px;}
+  .thanks::before{content:"⭐ ";} .thanks::after{content:" ⭐";}
+
+  /* ================= RESPONSIVE (screen) ================= */
+  @media screen and (max-width:860px){
+    body{padding:16px 8px 60px;}
+    .sheet{width:100%;}
+  }
+  @media screen and (max-width:700px){
+    .brandrow{flex-wrap:wrap; justify-content:center; text-align:center; gap:10px;}
+    .brand-en, .brand-ar{flex:1 1 42%;}
+    .brand-en .name, .brand-ar .name, .brand-en input.name, .brand-ar input.name{font-size:20px;}
+    .inforow{grid-template-columns:1fr;}
+    .center-head h1{font-size:26px;}
+    .fgrid3{grid-template-columns:1fr;}
+    .fgrid4{grid-template-columns:1fr 1fr;}
+    .sigrow{grid-template-columns:1fr 1fr;}
+    .sigrow .sc{border-right:none; border-bottom:1px solid var(--line-soft);}
+    .tbl{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+    .tbl table{min-width:600px;}
+    .totals table{width:100%;}
+    .totals{padding:0 16px;}
+  }
+  @media screen and (max-width:460px){
+    .feature-strip{gap:12px;}
+    .fgrid4, .sigrow{grid-template-columns:1fr;}
+    .center-head h1{font-size:22px;}
+    .pad, .inforow, .tbl, .fgrid3, .fgrid4{padding-left:14px; padding-right:14px;}
+  }
+
+  /* ================= PRINT ================= */
+  @media print{
+    @page{size:A4; margin:8mm;}
+    body{background:#fff; padding:0;}
+    .toolbar{display:none !important;}
+    .sheet{box-shadow:none; border:none; width:100%;}
+    .no-print{display:none !important;}
+    input.f, textarea.f{border:none !important; background:transparent !important; padding:0 2px;}
+    td input.num, td input.f, td textarea.f{border:none !important; background:transparent !important;}
+    .rmbtn{display:none !important;}
+    thead th{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    tbody tr:nth-child(even) td, .infobox .bh, .totals tr.grand td, .thanks, .topline, .feature-strip{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar no-print">
+  <span class="hint">Fill the fields, add items (Amount = Qty × Rate auto-totals), then Print / Save as PDF.</span>
+  <button class="gold" onclick="addRow()">＋ Add Item</button>
+  <button onclick="window.print()">🖨 Print / Save PDF</button>
+  <button onclick="resetAll()" style="background:#6b7280">↺ Reset</button>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="topline"></div>
+
+  <!-- HEADER -->
+  <div class="brandrow">
+    <div class="brand-en">
+      <input class="b name" id="bEnName" value="IBRAHIM MAWALI" oninput="saveBrand()">
+      <input class="b sub" id="bEnSub" value="TECHNICAL SERVICES L.L.C" oninput="saveBrand()">
+    </div>
+    <div class="logo">
+      <img id="logoImg" alt="logo" style="display:none; max-width:110px; max-height:60px; object-fit:contain;">
+      <svg id="logoSvg" width="86" height="52" viewBox="0 0 86 52" xmlns="http://www.w3.org/2000/svg">
+        <g fill="none" stroke="#1d3564" stroke-width="2.4">
+          <path d="M8 50 V22 L26 10 L44 22 V50"/>
+          <path d="M30 50 V26 L48 15 L66 26 V50"/>
+          <rect x="16" y="30" width="7" height="7"/>
+          <rect x="30" y="30" width="7" height="7"/>
+          <rect x="44" y="33" width="7" height="7"/>
+          <rect x="55" y="33" width="7" height="7"/>
+        </g>
+        <path d="M8 50 H78" stroke="#b8935a" stroke-width="2.4"/>
+      </svg>
+      <div class="logo-edit no-print" onclick="document.getElementById('logoFile').click()">Change logo</div>
+      <input type="file" id="logoFile" accept="image/*" style="display:none" onchange="uploadLogo(this)">
+    </div>
+    <div class="brand-ar">
+      <input class="b name" id="bArName" dir="rtl" value="إبراهيم موالي" oninput="saveBrand()">
+      <input class="b sub" id="bArSub" dir="rtl" value="الخدمات الفنية ذ.م.م" oninput="saveBrand()">
+    </div>
+  </div>
+
+  <div class="feature-strip">
+    <div class="fi"><span class="dot"></span><input class="b feat" id="feat0" value="PROFESSIONAL" oninput="saveBrand()"></div>
+    <div class="fi"><span class="dot"></span><input class="b feat" id="feat1" value="RELIABLE" oninput="saveBrand()"></div>
+    <div class="fi"><span class="dot"></span><input class="b feat" id="feat2" value="COMMITTED TO QUALITY" oninput="saveBrand()"></div>
+    <div class="fi"><span class="dot"></span><input class="b feat" id="feat3" value="BUILT ON TRUST" oninput="saveBrand()"></div>
+  </div>
+
+  <!-- INFO ROW -->
+  <div class="inforow">
+    <div class="infobox">
+      <div class="bh">📄 QUOTATION DETAILS</div>
+      <div class="bb">
+        <div class="kv"><label>Quotation Number</label><div class="val"><input class="f" value="IMTS/QUO/2026/049"></div></div>
+        <div class="kv"><label>Revision Number</label><div class="val"><input class="f" value="00"></div></div>
+        <div class="kv"><label>Issue Date</label><div class="val"><input class="f" value="02 July 2026"></div></div>
+        <div class="kv"><label>Validity Period</label><div class="val"><input class="f" value="30 Days"></div></div>
+        <div class="kv"><label>Currency</label><div class="val"><input class="f" value="AED"></div></div>
+        <div class="kv"><label>Document Reference</label><div class="val"><input class="f" value="IMTS/2026/049"></div></div>
+      </div>
+    </div>
+
+    <div class="center-head">
+      <h1>QUOTATION</h1>
+      <textarea class="f" rows="7">Dear Ahmad Al Shareif,
+
+Thank you for the opportunity to submit our quotation for the above-mentioned project. We have carefully studied the scope of work and are pleased to offer our competitive proposal.
+
+We are committed to delivering high-quality workmanship, utilizing skilled resources, quality materials, and industry best practices to ensure complete client satisfaction.
+
+We look forward to the opportunity to serve you and contribute to the successful completion of your project.</textarea>
+    </div>
+
+    <div class="infobox proj">
+      <div class="bh">🏢 PROJECT INFORMATION</div>
+      <div class="bb">
+        <div class="kv"><label>👤 Client Name</label><div class="val"><input class="f" value="Ahmad Al Shareif"></div></div>
+        <div class="kv"><label>🏗 Project Name</label><div class="val"><textarea class="f" rows="3">Villa No. 49 - External Interlock & Hardscape Replacement Works</textarea></div></div>
+        <div class="kv"><label>📍 Project Location</label><div class="val"><textarea class="f" rows="2">Villa number 49 At tawar Dubai</textarea></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-sr">SR.NO</th>
+          <th>DESCRIPTION OF WORKS</th>
+          <th class="col-unit">UNIT</th>
+          <th class="col-qty">QTY.</th>
+          <th class="col-rate">RATE (AED)</th>
+          <th class="col-amt">AMOUNT (AED)</th>
+          <th class="col-x no-print"></th>
+        </tr>
+      </thead>
+      <tbody id="items"></tbody>
+    </table>
+    <div class="addrow no-print"><button onclick="addRow()">＋ Add Item</button></div>
+  </div>
+
+  <!-- TOTALS -->
+  <div class="totals">
+    <table>
+      <tr><td class="lbl">SUBTOTAL</td><td class="num" id="subtotal">0.00</td></tr>
+      <tr class="grand"><td class="lbl" style="background:var(--navy);color:#fff">TOTAL AMOUNT (AED)</td><td class="num" id="grandtotal">0.00</td></tr>
+    </table>
+  </div>
+
+  <!-- FOOTER BOXES -->
+  <div class="fgrid3">
+    <div class="fbox">
+      <div class="fh"><span class="ic">✅</span> WORK INCLUDES</div>
+      <ul class="chk">
+        <li>Supply of all required materials</li>
+        <li>Labor and installation</li>
+        <li>Removing and fixing</li>
+        <li>Cleaning and site clearance</li>
+        <li>Complete execution as per site requirements</li>
+      </ul>
+    </div>
+    <div class="fbox">
+      <div class="fh"><span class="ic">📋</span> TERMS &amp; CONDITIONS</div>
+      <ul>
+        <li>30% Advance Payment upon quotation approval and before commencement of work.</li>
+        <li>Remaining 70% shall be paid based on work progress, with progress invoices issued every 30 calendar days.</li>
+        <li>Any additional or variation work outside the approved scope shall be quoted and charged separately upon Client approval.</li>
+      </ul>
+    </div>
+    <div class="fbox">
+      <div class="fh"><span class="ic">🚫</span> EXCLUSIONS</div>
+      <ul>
+        <li>Any work not mentioned in the above scope</li>
+        <li>Authority fees and approvals</li>
+        <li>As-built drawings and testing (unless specified)</li>
+        <li>Utility connection charges</li>
+        <li>VAT (if applicable)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="fgrid4">
+    <div class="fbox">
+      <div class="fh"><span class="ic">⭐</span> WHY CHOOSE US</div>
+      <ul>
+        <li>Professional workmanship</li>
+        <li>Experienced and skilled team</li>
+        <li>Dedicated project supervision</li>
+        <li>Quality materials and methods</li>
+        <li>Timely completion</li>
+        <li>Transparent communication</li>
+        <li>Customer satisfaction</li>
+      </ul>
+    </div>
+    <div class="fbox">
+      <div class="fh"><span class="ic">🛡</span> QUALITY ASSURANCE</div>
+      <p>We ensure quality workmanship through proper supervision, compliance with approved scope and inspections at various stages to ensure the highest standards before handover.</p>
+    </div>
+    <div class="fbox">
+      <div class="fh"><span class="ic">⛑</span> SAFETY STATEMENT</div>
+      <p>We are committed to maintaining a safe working environment, protecting our workforce, clients' property and ensuring compliance with all applicable safety requirements.</p>
+    </div>
+    <div class="fbox">
+      <div class="fh"><span class="ic">🏅</span> WARRANTY</div>
+      <p>Warranty details (if any) will be provided upon request or as per project specific agreement.</p>
+    </div>
+  </div>
+
+  <!-- SIGNATURES -->
+  <div class="sigrow">
+    <div class="sc">
+      <h4>PREPARED BY</h4>
+      <input class="b sig-name" id="prepName" value="Ibrahim Mawali" oninput="saveBrand()">
+      <input class="b small" id="prepCo" value="IBRAHIM MAWALI TECHNICAL SERVICES L.L.C" oninput="saveBrand()">
+      <div class="small">📞 <input class="b small" id="prepPhone" style="display:inline-block;width:auto" value="056-XXXX-XXX" oninput="saveBrand()"></div>
+    </div>
+    <div class="sc">
+      <h4>CLIENT ACCEPTANCE</h4>
+      <p class="small">I accept the above quotation along with the terms and conditions.</p>
+      <div class="lineitem">Authorized Signature: <span></span></div>
+      <div class="lineitem">Name: <span></span></div>
+      <div class="lineitem">Date: <span></span></div>
+      <div class="lineitem">Company Stamp: <span></span></div>
+    </div>
+    <div class="sc">
+      <h4>APPROVED BY</h4>
+      <div class="lineitem">Authorized Signature: <span></span></div>
+      <div class="lineitem">Name: <span></span></div>
+      <div class="lineitem">Date: <span></span></div>
+    </div>
+    <div class="sc">
+      <h4>COMPANY STAMP</h4>
+      <div class="stamp" onclick="document.getElementById('stampFile').click()">
+        <img id="stampImg" alt="stamp" style="display:none; max-width:100%; max-height:62px; object-fit:contain;">
+        <span id="stampHint" class="no-print">Click to upload stamp</span>
+      </div>
+      <input type="file" id="stampFile" accept="image/*" style="display:none" onchange="uploadStamp(this)">
+    </div>
+  </div>
+
+  <div class="thanks">Thank you for your business!</div>
+</div>
+
+<script>
+/* ---- Initial line items from the reference quotation ---- */
+const SEED = [
+  ["Careful Removal and Disposal of Existing Interlock Pavers and Installation of New Interlock Pavers Including Bedding Sand, Cutting, Alignment, Compaction and Finishing Complete.", "m²", 760, 95],
+  ["Careful Removal and Disposal of Existing Carvestone and Installation of New Carvestone Including Surface Preparation, Bedding, Alignment, Cutting and Finishing Complete.", "m²", 46, 65],
+  ["Careful Removal and Disposal of Existing Helcoverh and Installation of New Helcoverh Including Bedding, Alignment and Finishing Complete.", "Lm", 31, 55],
+  ["Careful Removal and Disposal of Existing Tiles and Installation of New Tiles Including Surface Preparation, Adhesive, Grouting, Cutting, Alignment and Finishing Complete.", "m²", 122, 110],
+  ["Crack Repair and Repainting Works Using Jotashield Premium Materials Including Surface Preparation, Application, Coating and Finishing Complete.", "m²", 775, 35],
+  ["Careful Removal and Disposal of Existing Main Entrance Granite and Installation of New Marble or Granite Including Surface Preparation, Setting, Alignment and Finishing Complete.", "LS", 1, 14000],
+  ["Careful Removal of Existing Entrance Column Gypsum Cladding and Installation of New Stone or Marble Cladding Including Surface Preparation, Fixing and Finishing Complete.", "LS", 1, 16500],
+  ["Demolition of Existing Boundary Wall and Reconstruction with New Blockwork, Cement Plaster and Matching Paint Finish Complete Including Foundation, Backfilling, Plastering and Painting.", "LS", 1, 5400],
+  ["Collection, Removal and Off-Site Disposal of All Construction Debris from the Work Area Including Loading, Transportation and Disposal at Approved Dumping Site.", "LS", 1, 6200]
+];
+
+const fmt = n => (isFinite(n)?n:0).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+
+function rowHTML(desc="", unit="", qty="", rate=""){
+  return `<tr>
+    <td class="col-sr sr"></td>
+    <td class="desc"><textarea class="f" oninput="recalc()">${desc}</textarea></td>
+    <td class="col-unit"><input class="f" style="text-align:center" value="${unit}" oninput="recalc()"></td>
+    <td class="col-qty"><input class="f num" type="number" step="any" value="${qty}" oninput="recalc()"></td>
+    <td class="col-rate"><input class="f num" type="number" step="any" value="${rate}" oninput="recalc()"></td>
+    <td class="col-amt"><span class="amt">0.00</span></td>
+    <td class="col-x no-print"><button class="rmbtn" onclick="this.closest('tr').remove();recalc()">×</button></td>
+  </tr>`;
+}
+
+function addRow(desc,unit,qty,rate){
+  document.getElementById('items').insertAdjacentHTML('beforeend', rowHTML(desc,unit,qty,rate));
+  recalc();
+}
+
+function recalc(){
+  let sub = 0;
+  document.querySelectorAll('#items tr').forEach((tr,i)=>{
+    tr.querySelector('.sr').textContent = (i+1) + '.';
+    const q = parseFloat(tr.querySelector('.col-qty input').value)||0;
+    const r = parseFloat(tr.querySelector('.col-rate input').value)||0;
+    const amt = q*r;
+    tr.querySelector('.amt').textContent = fmt(amt);
+    sub += amt;
+  });
+  document.getElementById('subtotal').textContent = fmt(sub);
+  document.getElementById('grandtotal').textContent = fmt(sub);
+}
+
+function resetAll(){
+  if(!confirm('Clear all items and start blank?')) return;
+  document.getElementById('items').innerHTML='';
+  addRow();
+}
+
+/* ---- Company branding: editable + saved in this browser ---- */
+const BRAND_FIELDS = ['bEnName','bEnSub','bArName','bArSub','feat0','feat1','feat2','feat3','prepName','prepCo','prepPhone'];
+
+function sizeFeats(){
+  ['feat0','feat1','feat2','feat3'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.setAttribute('size', Math.max(6, el.value.length + 1));
+  });
+}
+
+function saveBrand(){
+  sizeFeats();
+  const data = {};
+  BRAND_FIELDS.forEach(id => data[id] = document.getElementById(id).value);
+  const img = document.getElementById('logoImg');
+  data.logo = (img.style.display !== 'none') ? img.src : '';
+  const st = document.getElementById('stampImg');
+  data.stamp = (st.style.display !== 'none') ? st.src : '';
+  try { localStorage.setItem('imBrand', JSON.stringify(data)); } catch(e){}
+}
+
+function loadBrand(){
+  let data; try { data = JSON.parse(localStorage.getItem('imBrand')); } catch(e){}
+  if(!data) return;
+  BRAND_FIELDS.forEach(id => { if(data[id] != null) document.getElementById(id).value = data[id]; });
+  if(data.logo) setLogo(data.logo);
+  if(data.stamp) setStamp(data.stamp);
+}
+
+function setStamp(src){
+  const st = document.getElementById('stampImg');
+  st.src = src; st.style.display = 'block';
+  document.getElementById('stampHint').style.display = 'none';
+}
+
+function uploadStamp(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { setStamp(e.target.result); saveBrand(); };
+  reader.readAsDataURL(file);
+}
+
+function setLogo(src){
+  const img = document.getElementById('logoImg');
+  img.src = src; img.style.display = 'block';
+  document.getElementById('logoSvg').style.display = 'none';
+}
+
+function resetLogo(){
+  const img = document.getElementById('logoImg');
+  img.style.display = 'none'; img.removeAttribute('src');
+  document.getElementById('logoSvg').style.display = 'block';
+  saveBrand();
+}
+
+function uploadLogo(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { setLogo(e.target.result); saveBrand(); };
+  reader.readAsDataURL(file);
+}
+
+/* build seed rows */
+SEED.forEach(r=>addRow(r[0],r[1],r[2],r[3]));
+recalc();
+loadBrand();
+sizeFeats();
+</script>
+</body>
+</html>
